@@ -13,7 +13,7 @@ namespace RSMFGen
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             /*
              * This sample application is a simple wrapper around the RSMFGenerator class.             

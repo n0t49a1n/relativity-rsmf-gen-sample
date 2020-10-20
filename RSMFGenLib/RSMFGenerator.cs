@@ -42,7 +42,7 @@ namespace RSMFGenLib
         /* The Custodian properties are used to populate the "From" EML field.*/
         public string CustodianDisplay { get; set; } = string.Empty;
         public string CustodianEmail { get; set; }
-        public bool ValidateZip { get; set; } = true;
+        public bool ValidateZip { get; set; } = false;
 
 
         /* 
@@ -64,6 +64,7 @@ namespace RSMFGenLib
                 throw new Exception($"The file messages.json does not exist in {inputDirectory.FullName}.");
             }
             manifest = inputDirectory.GetFiles("messages.json", SearchOption.TopDirectoryOnly)?[0];
+
             /* 
              * Create a stream to a zip that contains the rsmf_manifest.json file and any other files that exist in its
              * directory.
@@ -76,7 +77,7 @@ namespace RSMFGenLib
                  * RSMF specification.  It also verifies that the attachment references in rsmf_manifest.json have equivalent
                  * files in the Zip.
                  */
-                if (ValidateZip)
+                if(ValidateZip)
                 {
                     IValidator zipValidator = RSMFValidatorFactory.GetRSMFZipValidator();
                     RSMFValidatorResult results = zipValidator.PerformTests(rsmf_zip);
@@ -84,8 +85,7 @@ namespace RSMFGenLib
                      * This code only reports errors, not warnings.  Warnings from the validator are
                      * contained in the results.Warnings list.
                      */
-                    Console.WriteLine("debug line 87");
-                    if (results.Result == ResultTypes.Failed)
+                    if(results.Result == ResultTypes.Failed)
                     {
                         StringBuilder errorString = new StringBuilder();
                         foreach(IValidatorError error in results.Errors)
@@ -96,21 +96,13 @@ namespace RSMFGenLib
                         throw new Exception("Validation of the generated ZIP failed: " + errorString.ToString());
                     }
                 }
-                Console.WriteLine("debug line 99");
-
-
-
-                Console.WriteLine("debug line 103");
+                
                 /* Leverage MimeKit to create the representation of the RSMF file.*/
                 MimeMessage rsmf = CreateRSMF(manifest);
                 /* MimePart defaults to application/octet-stream, which is exactly what is necessary.*/
-                Console.WriteLine("debug line 107");
                 MimePart attachment = new MimePart();
-                Console.WriteLine("debug line 109");
                 attachment.Content = new MimeContent(rsmf_zip);
-                Console.WriteLine("111");
                 attachment.ContentDisposition = new ContentDisposition(ContentDisposition.Attachment);
-                Console.WriteLine("113");
                 /* The RSMF specification requires that the name of the attachment be rsmf.zip */
                 attachment.FileName = "rsmf.zip";
                 /*
@@ -176,15 +168,13 @@ namespace RSMFGenLib
 
                 /* This is the only required header for an RSMF file.  All others are optional.*/
                 rsmf.Headers.Add("X-RSMF-Version", json["version"].ToString());
-                Console.WriteLine("rsmf.Headers.Add(X - RSMF - Version, json[version].ToString());");
                 /*
                  * The To field of the RSMF should be populated with the participants of the rsmf_manifest.json file.
                  * Order isn't really important here.
                  */
-                Console.WriteLine("if (json[from] != null) - start"); 
-                if (json["from"] != null)
+                if (json["participants"] != null)
                 {
-                    JToken participants = json["from"];
+                    JToken participants = json["participants"];
                     /*
                      * It is much faster to create a List and send all of the addresses at once
                      * to the MimeMessage object.
@@ -198,19 +188,18 @@ namespace RSMFGenLib
                     }
                     rsmf.To.AddRange(to);
                 }
-                Console.WriteLine("if (json[from] != null) - end");
+
                 TextPart textPart = new TextPart(TextFormat.Plain);
-                Console.WriteLine("if (json[messagetype] != null) - start"); 
-                if (json["messagetype"] != null)
+                if (json["events"] != null)
                 {
                     /* To sort the events they need to be in a List.*/
-                    List<JToken> events = json["messagetype"].ToList();
+                    List<JToken> events = json["events"].ToList();
 
                     /* The list of events gets sorted by their timestamp so that older event data is put into the body text first.*/
                     events.Sort((first, second) =>
                     {
-                        string firstTimestamp = first["originalarrivaltime"]?.ToString() ?? "";
-                        string secondTimestamp = first["lastimreceivedtime"]?.ToString() ?? "";
+                        string firstTimestamp = first["timestamp"]?.ToString() ?? "";
+                        string secondTimestamp = second["timestamp"]?.ToString() ?? "";
                         return string.Compare(firstTimestamp, secondTimestamp);
                     });
 
@@ -218,13 +207,13 @@ namespace RSMFGenLib
                     rsmf.Headers.Add("X-RSMF-EventCount", events.Count.ToString());
                     if (events.Count > 1)
                     {
-                        if (events[0]["originalarrivaltime"] != null)
+                        if (events[0]["timestamp"] != null)
                         {
-                            rsmf.Headers.Add("X-RSMF-BeginDate", events[0]["originalarrivaltime"].ToString());
+                            rsmf.Headers.Add("X-RSMF-BeginDate", events[0]["timestamp"].ToString());
                         }
                         if (events.Last()["timestamp"] != null)
                         {
-                            rsmf.Headers.Add("X-RSMF-EndDate", events.Last()["lastimreceivedtime"].ToString());
+                            rsmf.Headers.Add("X-RSMF-EndDate", events.Last()["timestamp"].ToString());
                         }
 
                     }
@@ -235,7 +224,6 @@ namespace RSMFGenLib
                     /*Create an empty body.*/
                     textPart.Text = "";
                 }
-                Console.WriteLine("if (json[messagetype] != null) - end");
                 /*
                  * In MimeKit, the Body property is the body of the whole EML.  Since the RSMF requires rsmf.zip as an attachment, the body needs to be multipart/mixed.
                  */
