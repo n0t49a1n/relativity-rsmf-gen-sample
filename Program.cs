@@ -18,11 +18,7 @@ namespace RSMFGen
             if(args.Length < 2)
             {
                 Console.WriteLine("Usage:");
-                Console.WriteLine("RSMFGen <Input directory> <Output RSMF file> -validate");                
-                Console.WriteLine("Input directory should be a directory that contains an rsmf_manifest.json file and any attachments it references.");
-                Console.WriteLine("Output RSMF file is the file where the RSMF data will be written.");
                 Console.WriteLine("Validation on the Zip layer is performed if -validate is specified.  On validation error, no RSMF is created.");
-                Console.WriteLine("Output RSMF should not be created in Input directory.");
 
                 return;
             }
@@ -31,11 +27,26 @@ namespace RSMFGen
              * Validation of the input directory is done by the class, but output location still
              * needs validation.
              */
-            if(Path.GetDirectoryName(args[1]) != string.Empty && Directory.Exists(Path.GetDirectoryName(args[1])) == false)
+
+            //arg removals and check / create folders
+            string inputpath = @"json";
+            string outputpath = @"rsmf";
+
+            Console.WriteLine("Checking json folder ..");
+            if (!Directory.Exists(inputpath))
             {
-                Console.WriteLine($"Output directory {args[1]} doesn't exist.");
-                return;
+                Console.WriteLine("Creating json folder"); 
+                Directory.CreateDirectory(inputpath);
             }
+            Console.WriteLine("json folder ok");          
+            Console.WriteLine("Checking rsmf folder ..");
+            if (!Directory.Exists(outputpath))
+            {
+                Console.WriteLine("Creating rsmf folder");
+                Directory.CreateDirectory( outputpath);
+            }
+            Console.WriteLine("rsmf folder ok");
+
 
             var rsmf = new RSMFGenerator();
             try
@@ -46,7 +57,7 @@ namespace RSMFGen
                 rsmf.CustodianDisplay = "Relativity";
                 rsmf.CustodianEmail = "support@relativity.com";
                 
-                if(args.Length > 2 && args[2].Equals("-validate", StringComparison.OrdinalIgnoreCase))
+                if(args.Length > 2 && args[0].Equals("-validate", StringComparison.OrdinalIgnoreCase))
                 {
                     /*
                      * Validating affects the peformance of creating an RSMF.  If the JSON has already been validated before
@@ -54,7 +65,7 @@ namespace RSMFGen
                      */
                     rsmf.ValidateZip = true;
                 }
-                rsmf.GenerateRSMF(new System.IO.DirectoryInfo(args[0]), new System.IO.FileInfo(args[1]));
+                rsmf.GenerateRSMF(new DirectoryInfo(inputpath), new FileInfo(outputpath));
             }
             catch(Exception ex)
             {

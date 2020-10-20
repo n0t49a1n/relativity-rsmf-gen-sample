@@ -1,0 +1,17 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/bin/Debug
+/obj/Debug
+/obj/Release
+/packages/MimeKitLite.2.1.3
+/packages/Newtonsoft.Json.12.0.1
+/packages/NJsonSchema.9.13.14
+/packages/Relativity.RSMFU.Validator.SDK.1.0.8
+/RSMFGenLib/bin
+/RSMFGenLib/obj
+*.pdb
+/bin/Release/JSON
+*.dll
+*.exe
