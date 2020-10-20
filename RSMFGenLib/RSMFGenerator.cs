@@ -76,7 +76,6 @@ namespace RSMFGenLib
                  * RSMF specification.  It also verifies that the attachment references in rsmf_manifest.json have equivalent
                  * files in the Zip.
                  */
-                Console.WriteLine("validate zip - start"); 
                 if (ValidateZip)
                 {
                     IValidator zipValidator = RSMFValidatorFactory.GetRSMFZipValidator();
@@ -85,7 +84,8 @@ namespace RSMFGenLib
                      * This code only reports errors, not warnings.  Warnings from the validator are
                      * contained in the results.Warnings list.
                      */
-                    if(results.Result == ResultTypes.Failed)
+                    Console.WriteLine("debug line 87");
+                    if (results.Result == ResultTypes.Failed)
                     {
                         StringBuilder errorString = new StringBuilder();
                         foreach(IValidatorError error in results.Errors)
@@ -96,16 +96,17 @@ namespace RSMFGenLib
                         throw new Exception("Validation of the generated ZIP failed: " + errorString.ToString());
                     }
                 }
-                Console.WriteLine("validate zip - end");
+                Console.WriteLine("debug line 99");
 
 
-                Console.WriteLine("103");
+
+                Console.WriteLine("debug line 103");
                 /* Leverage MimeKit to create the representation of the RSMF file.*/
                 MimeMessage rsmf = CreateRSMF(manifest);
                 /* MimePart defaults to application/octet-stream, which is exactly what is necessary.*/
-                Console.WriteLine("107");
+                Console.WriteLine("debug line 107");
                 MimePart attachment = new MimePart();
-                Console.WriteLine("109");
+                Console.WriteLine("debug line 109");
                 attachment.Content = new MimeContent(rsmf_zip);
                 Console.WriteLine("111");
                 attachment.ContentDisposition = new ContentDisposition(ContentDisposition.Attachment);
